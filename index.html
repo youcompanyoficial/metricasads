@@ -1330,6 +1330,8 @@ function processSheetsCSV(text, sheetSt, status, btn) {
   const iData   = headers.findIndex(h => h.includes('DATA'));
   const iAnuncio= headers.findIndex(h => h.includes('ANUNCIO') || h.includes('ANÚNCIO') || h.includes('CAMPANHA'));
 
+  console.log('[Sheets] Headers detected:', headers);
+  console.log('[Sheets] iNum='+iNum+' iNome='+iNome+' iValor='+iValor+' iData='+iData+' iAnuncio='+iAnuncio);
   SHEETS_SALES = [];
   let skipped = 0;
 
@@ -1365,21 +1367,37 @@ function processSheetsCSV(text, sheetSt, status, btn) {
       dateStr = `${y}-${parts[1].padStart(2,'0')}-${parts[0].padStart(2,'0')}`;
     }
 
-    const anuncio = get(iAnuncio);
+    const anuncio = get(iAnuncio).trim();
     const nome    = get(iNome);
     const num     = get(iNum);
 
-    const campMatch = anuncio ? CAMPS_LIST.find(c => {
-      const cn = c.name.toLowerCase(), an = anuncio.toLowerCase();
-      return cn === an || cn.includes(an) || an.includes(cn) ||
-             cn.split(/[\s\-_]+/).some(w => w.length > 3 && an.includes(w));
-    }) : null;
+    // DEBUG: log ALL rows
+    if (i <= 20) {
+      console.log(`[Row ${i}] cols(${cols.length}):`, cols);
+      console.log(`  iAnuncio=${iAnuncio} => "${anuncio}" | iNome=${iNome} => "${nome}"`);
+    }
+
+    // Correspondência 100% EXATA — nome da coluna ANUNCIO deve ser
+    // idêntico ao nome da campanha no Meta (ignora maiúsculas/minúsculas)
+    // Vazio = sem anúncio. Nome parecido mas diferente = sem vínculo.
+    let campMatch = null;
+    if (anuncio) {
+      const an = anuncio.toLowerCase().trim();
+      campMatch = CAMPS_LIST.find(c => c.name.toLowerCase().trim() === an) || null;
+    }
+
+    // campName = nome EXATO da campanha Meta se houver match,
+    // senão mostra EXATAMENTE o que está na coluna ANUNCIO da planilha
+    const displayName = campMatch ? campMatch.name
+                      : (anuncio && anuncio !== '-' && anuncio !== '—') ? anuncio
+                      : 'Sem anúncio';
 
     SHEETS_SALES.push({
       id: 'sh_' + i + '_' + Date.now(),
       date: dateStr || rawDate || '—',
-      campId:   campMatch ? campMatch.id   : (anuncio ? '__anuncio_'+anuncio : '__direct'),
-      campName: campMatch ? campMatch.name : (anuncio || 'Não atribuído'),
+      campId:   campMatch ? campMatch.id
+              : (anuncio && anuncio !== '-' ? '__anuncio_' + anuncio : '__sem_anuncio'),
+      campName: displayName,
       prod: '', val, cli: nome, obs: num, source: 'sheets'
     });
   }
