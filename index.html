@@ -217,10 +217,69 @@ footer { border-top:1px solid var(--border); padding:20px 0; margin-top:50px; te
 .period-bar-label { font-size:12px; color:var(--muted); }
 .period-bar-val { font-size:13px; font-weight:700; font-family:'DM Mono',monospace; color:var(--accent); }
 
+/* LOGIN SCREEN */
+#loginScreen {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  z-index:9999; padding:20px;
+}
+.login-box {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:18px; padding:40px 36px; width:100%; max-width:380px;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+}
+.login-logo { display:flex; align-items:center; gap:12px; margin-bottom:32px; }
+.login-logo-box { width:44px; height:44px; background:var(--accent); border-radius:10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:20px; color:#000; }
+.login-logo h2 { font-size:18px; font-weight:700; }
+.login-logo p { font-size:11px; color:var(--muted); }
+.login-field { margin-bottom:16px; }
+.login-field label { display:block; font-size:11px; font-weight:600; color:var(--muted); letter-spacing:.5px; text-transform:uppercase; margin-bottom:7px; }
+.login-field input {
+  width:100%; background:var(--surface2); border:1px solid var(--border);
+  border-radius:9px; padding:12px 14px; color:var(--text);
+  font-family:'DM Sans',sans-serif; font-size:14px; outline:none;
+  transition:border-color .2s;
+}
+.login-field input:focus { border-color:var(--accent); }
+.login-btn {
+  width:100%; padding:13px; background:var(--accent); color:#000;
+  border:none; border-radius:9px; font-size:14px; font-weight:700;
+  font-family:'DM Sans',sans-serif; cursor:pointer; margin-top:8px;
+  transition:opacity .2s;
+}
+.login-btn:hover { opacity:.85; }
+.login-err { color:var(--danger); font-size:12px; margin-top:10px; text-align:center; display:none; }
+.login-lock { text-align:center; color:var(--muted); font-size:11px; margin-top:18px; }
+
 </style>
 </head>
 <body>
 <div class="wrap">
+
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-box">M</div>
+      <div>
+        <h2>Meta Ads Analyzer</h2>
+        <p>Acesso restrito</p>
+      </div>
+    </div>
+    <div class="login-field">
+      <label>Usuário</label>
+      <input type="text" id="loginUser" placeholder="Digite seu usuário" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-field">
+      <label>Senha</label>
+      <input type="password" id="loginPass" placeholder="Digite sua senha" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Entrar →</button>
+    <div class="login-err" id="loginErr">Usuário ou senha incorretos.</div>
+    <div class="login-lock">🔒 Acesso protegido por senha</div>
+  </div>
+</div>
 
 <header>
   <div class="hrow">
@@ -1176,7 +1235,37 @@ function renderGlobal(accIns, camps, campIns) {
 }
 
 // ── INIT ─────────────────────────────────────────────────────────────────
+
+// ── LOGIN ────────────────────────────────────────────────────────────────
+const AUTH_USER = 'youcompany';
+const AUTH_PASS = 'pablorigonatto145236';
+const AUTH_KEY  = 'maa_auth_v1';
+
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  const err = document.getElementById('loginErr');
+  if (u === AUTH_USER && p === AUTH_PASS) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    err.style.display = 'none';
+  } else {
+    err.style.display = 'block';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginPass').focus();
+  }
+}
+
+function checkAuth() {
+  if (sessionStorage.getItem(AUTH_KEY) !== '1') {
+    document.getElementById('loginScreen').style.display = 'flex';
+  } else {
+    document.getElementById('loginScreen').style.display = 'none';
+  }
+}
+
 window.onload = () => {
+  checkAuth();
   // Token fixo no arquivo — sempre sobrescreve localStorage
   const FIXED_TOKEN = 'EAANaY1FwofIBQ2fFXPDZBDXaAS0HMynir6yW5xNZAZAaR7ZBenZACsMH2uCtAKwWNvqZAt7AYyplkj8ZAnL3FW84F77BTCKY3arrjnckL1zsdHcbathZCCCOYw5ONZAKzlZBg8nIFyss40RPxg7Au894zHhO3GNCM2IaHuY75q26zsD4CuVATLRwTZCMBB6HYMq8cY4sZCYY73JNmZC9y';
   document.getElementById('tokInput').value = FIXED_TOKEN;
