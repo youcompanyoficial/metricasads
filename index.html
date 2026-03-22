@@ -26,6 +26,7 @@ body {
   font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.6;
   -webkit-font-smoothing: antialiased; min-height: 100vh;
 }
+body.locked .wrap > *:not(#loginScreen) { visibility:hidden; pointer-events:none; }
 .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
 
 header { padding: 28px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
@@ -1237,16 +1238,29 @@ function renderGlobal(accIns, camps, campIns) {
 // ── INIT ─────────────────────────────────────────────────────────────────
 
 // ── LOGIN ────────────────────────────────────────────────────────────────
-const AUTH_USER = 'youcompany';
-const AUTH_PASS = 'pablorigonatto145236';
-const AUTH_KEY  = 'maa_auth_v1';
+const AUTH_HASH_U = '0e67aff92598f723ff7c571955101b8c6c967ce6276afed739d079a6947d3e6b';
+const AUTH_HASH_P = '650f9fa7374f054a0811b847e16abbcc70ee36bbc9b48107f1f60a076cb2176b';
+const AUTH_KEY    = 'maa_auth_v1';
 
-function doLogin() {
+async function sha256(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value.trim();
   const err = document.getElementById('loginErr');
-  if (u === AUTH_USER && p === AUTH_PASS) {
-    sessionStorage.setItem(AUTH_KEY, '1');
+  const btn = document.querySelector('.login-btn');
+  btn.textContent = 'Verificando...';
+  btn.disabled = true;
+  const uh = await sha256(u);
+  const ph = await sha256(p);
+  btn.textContent = 'Entrar →';
+  btn.disabled = false;
+  if (uh === AUTH_HASH_U && ph === AUTH_HASH_P) {
+    sessionStorage.setItem(AUTH_KEY, btoa(uh.slice(0,16)));
+    document.body.classList.remove('locked');
     document.getElementById('loginScreen').style.display = 'none';
     err.style.display = 'none';
   } else {
@@ -1257,9 +1271,14 @@ function doLogin() {
 }
 
 function checkAuth() {
-  if (sessionStorage.getItem(AUTH_KEY) !== '1') {
+  const stored = sessionStorage.getItem(AUTH_KEY);
+  const expected = btoa(AUTH_HASH_U.slice(0,16));
+  if (stored !== expected) {
+    document.body.classList.add('locked');
     document.getElementById('loginScreen').style.display = 'flex';
+    setTimeout(() => document.getElementById('loginUser').focus(), 100);
   } else {
+    document.body.classList.remove('locked');
     document.getElementById('loginScreen').style.display = 'none';
   }
 }
